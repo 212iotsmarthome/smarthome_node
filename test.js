@@ -1,4 +1,4 @@
-const express = require("express")
+const express = require("express");
 const cors = require("cors");
 const mqtt = require('mqtt');
 const app = express();
@@ -50,14 +50,6 @@ client.on('connect', () => {
     client.subscribe([my_topic], () => {
         console.log(`Subscribe to topic '${my_topic}'`)
     });
-    // const req = https.request(options, res => {
-    //     console.log(`statusCode: ${res.statusCode}`);
-    //     res.on('data', d => {
-    //       console.log(d.toString());
-    //     })
-    // })
-    // req.on('error', error => { console.error(error) });
-    // req.end();
 });
 
 function writeMQTT(topic, str){
