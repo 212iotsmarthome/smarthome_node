@@ -70,6 +70,7 @@ app.put('/controlDoor', (req, res) => {
 
 app.put('/controlAlarm', (req, res) => {
     const id = req.body.id;
+
     const boardId = req.body.boardId;
     const value = req.body.value;
     console.log(id, boardId, value);
@@ -100,6 +101,7 @@ app.put('/controlLED', (req, res) => {
     // Wtite to Ada
     res.send("Received control LED req: " + boardId + " " + id + " " + value);
     writeMQTT(LEDtopic, JSON.stringify(LED));
+
 })
 
 app.put('/controlAC', (req, res) => {
@@ -154,3 +156,4 @@ client.on('message', (topic, message) => {
 //DHT11: ẩm/nhiệt
 // LDR: ánh sáng
 // Gas: khí ga
+
