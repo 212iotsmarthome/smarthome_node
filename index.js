@@ -49,7 +49,7 @@ client.on('connect', () => {
 function writeMQTT(topic, str){
     client.publish(topic, str, { qos: 0, retain: false }, (error) => {
         if (error) {
-          console.error(error)
+          console.error(error);
         }
     })
 }
@@ -62,15 +62,20 @@ app.listen(3002, () => {
 // PUT request
 app.put('/controlDoor', (req, res) => {
     const id = req.body.id;
+    const boardId = req.body.boardId;
     const isLocked = req.body.isLocked;
     const isOpen = req.body.isOpen;
     console.log(id, isLocked, isOpen);
+
+    Door[boardId][id]["motor"] = isOpen;
+    Door[boardId][id]["lock"] = isLocked;
+
     res.send("Received control door req");
+    writeMQTT(Doortopic, JSON.stringify(Door));
 })
 
 app.put('/controlAlarm', (req, res) => {
     const id = req.body.id;
-
     const boardId = req.body.boardId;
     const value = req.body.value;
     console.log(id, boardId, value);
@@ -83,10 +88,16 @@ app.put('/controlAlarm', (req, res) => {
 
 app.put('/controlCurtain', (req, res) => {
     const id = req.body.id;
+    const boardId = req.body.boardId;
     const action = req.body.action; // 0: close, 1:half, 2:full
-    console.log(id, action);
-    res.send("Received control curtain req: " + id + " " + action);
+    console.log(id, boardId, action);
 
+     //Change Curtain value
+    Curtain[boardId][id] = action;
+
+    // Write to Ada
+    res.send("Received control curtain req: " + id + " " + action);
+    writeMQTT(Curtopic, JSON.stringify(Curtain));
 })
 
 app.put('/controlLED', (req, res) => {
@@ -98,10 +109,9 @@ app.put('/controlLED', (req, res) => {
     //Change LED value
     LED[boardId][id] = value;
     
-    // Wtite to Ada
+    // Write to Ada
     res.send("Received control LED req: " + boardId + " " + id + " " + value);
     writeMQTT(LEDtopic, JSON.stringify(LED));
-
 })
 
 app.put('/controlAC', (req, res) => {
@@ -109,11 +119,13 @@ app.put('/controlAC', (req, res) => {
     const boardId = req.body.boardId;
     const power = req.body.power;
     const temp = req.body.temp;
-    console.log(id, isOn, temp);
+    console.log(boardId, id, power, temp);
 
+    //Change AC value
     AC[boardId][id]["power"] = power;
     AC[boardId][id]["temp"] = temp
 
+    // Write to Ada
     res.send("Received control AC req: " + id + " " + isOn + " " + temp);
     writeMQTT(ACtopic, JSON.stringify(AC));
 })
@@ -153,7 +165,6 @@ client.on('message', (topic, message) => {
 // Door: {"board1":{"0":{"motor":1,"lock":0}}}
 // Curtain: {"board1":{"0":0}}
 
-//DHT11: ẩm/nhiệt
+// DHT11: ẩm/nhiệt
 // LDR: ánh sáng
 // Gas: khí ga
-
