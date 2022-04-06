@@ -1,5 +1,4 @@
 {
-
   "name": "backend",
   "version": "1.0.0",
   "main": "index.js",
@@ -11,6 +10,7 @@
     "adafruit-io": "^4.4.0",
     "cors": "^2.8.5",
     "express": "^4.17.3",
+    "local-ipv4-address": "^0.0.2",
     "mqtt": "^4.3.7",
     "mqtt-topping": "^0.8.13",
     "nodemon": "^2.0.15"
