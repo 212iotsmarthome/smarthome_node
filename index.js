@@ -1,57 +1,69 @@
-const express = require('express');
-const cors = require("cors");
-const mqtt = require('mqtt');
+const express = require("express");
+// var localIpV4Address = require("local-ipv4-address");
+// const cors = require("cors");
+const mqtt = require("mqtt");
 const app = express();
 const port = 3002;
 
 app.use(express.json());
 
-const username = 'namdiep239';
-const   LEDtopic = 'namdiep239/feeds/bbc-led', 
-        ACtopic = 'namdiep239/feeds/bbc-conditioner', 
-        Buzztopic = 'namdiep239/feeds/bbc-buzzer', 
-        Curtopic = 'namdiep239/feeds/bbc-curtain', 
-        Doortopic = 'namdiep239/feeds/bbc-door', 
-        Sensortopic = 'namdiep239/feeds/bbc-sensor';
+// localIpV4Address().then(function (ipAddress) {
+//   console.log("My IP address is " + ipAddress);
+//   // My IP address is 10.4.4.137
+// });
 
-var LED = {}, AC = {}, Buzzer = {}, Curtain = {}, Door = {}, Sensor = {};
+const username = "namdiep239";
+const LEDtopic = "namdiep239/feeds/bbc-led",
+  ACtopic = "namdiep239/feeds/bbc-conditioner",
+  Buzztopic = "namdiep239/feeds/bbc-buzzer",
+  Curtopic = "namdiep239/feeds/bbc-curtain",
+  Doortopic = "namdiep239/feeds/bbc-door",
+  Sensortopic = "namdiep239/feeds/bbc-sensor";
+
+var jsonModel = require("./model.json");
+var LED = jsonModel.led,
+  AC = jsonModel.ac,
+  Buzzer = jsonModel.buzzer,
+  Curtain = jsonModel.curtain,
+  Door = jsonModel.door,
+  Sensor = jsonModel.sensor;
 
 // MQTT connect
-var client = mqtt.connect('mqtts://io.adafruit.com',{
-    port: 8883,
-    username: username,
-    password: 'aio_cSFh41uOGJgJ3IyiK0f0evTUtDOw',
+var client = mqtt.connect("mqtts://io.adafruit.com", {
+  port: 8883,
+  username: username,
+  password: "aio_cSFh41uOGJgJ3IyiK0f0evTUtDOw",
 });
 
-client.on('connect', () => {
-    console.log('Connected');
-    client.subscribe([LEDtopic], () => {
-        console.log(`Subscribe to topic '${LEDtopic}'`)
-    });
-    client.subscribe([ACtopic], () => {
-        console.log(`Subscribe to topic '${ACtopic}'`)
-    });
-    client.subscribe([Buzztopic], () => {
-        console.log(`Subscribe to topic '${Buzztopic}'`)
-    });
-    client.subscribe([Curtopic], () => {
-        console.log(`Subscribe to topic '${Curtopic}'`)
-    });
-    client.subscribe([Doortopic], () => {
-        console.log(`Subscribe to topic '${Doortopic}'`)
-    });
-    client.subscribe([Sensortopic], () => {
-        console.log(`Subscribe to topic '${Sensortopic}'`)
-    });
+client.on("connect", () => {
+  console.log("Connected");
+  client.subscribe([LEDtopic], () => {
+    console.log(`Subscribe to topic '${LEDtopic}'`);
+  });
+  client.subscribe([ACtopic], () => {
+    console.log(`Subscribe to topic '${ACtopic}'`);
+  });
+  client.subscribe([Buzztopic], () => {
+    console.log(`Subscribe to topic '${Buzztopic}'`);
+  });
+  client.subscribe([Curtopic], () => {
+    console.log(`Subscribe to topic '${Curtopic}'`);
+  });
+  client.subscribe([Doortopic], () => {
+    console.log(`Subscribe to topic '${Doortopic}'`);
+  });
+  client.subscribe([Sensortopic], () => {
+    console.log(`Subscribe to topic '${Sensortopic}'`);
+  });
 });
 
 // Publish on AdafruitIO via MQTT
-function writeMQTT(topic, str){
-    client.publish(topic, str, { qos: 0, retain: false }, (error) => {
-        if (error) {
-          console.error(error);
-        }
-    })
+function writeMQTT(topic, str) {
+  client.publish(topic, str, { qos: 0, retain: false }, (error) => {
+    if (error) {
+      console.error(error);
+    }
+  });
 }
 
 // Listen with React Native
@@ -60,80 +72,96 @@ app.listen(port, () => {
 });
 
 // PUT request
-app.put('/controlDoor', (req, res) => {
-    const id = req.body.id;
-    const boardId = req.body.boardId;
-    const isLocked = req.body.isLocked;
-    const isOpen = req.body.isOpen;
-    console.log(id, isLocked, isOpen);
+app.put("/controlDoor", (req, res) => {
+  const id = req.body.id;
+  const boardId = req.body.boardId;
+  const isLocked = req.body.isLocked ? 1 : 0;
+  const isOpen = req.body.isOpen ? 1 : 0;
+  console.log(id, isLocked, isOpen);
 
-    Door[boardId][id]["motor"] = isOpen;
-    Door[boardId][id]["lock"] = isLocked;
+  Door[boardId][id]["motor"] = isOpen;
+  Door[boardId][id]["lock"] = isLocked;
 
-    res.send("Received control door req");
-    writeMQTT(Doortopic, JSON.stringify(Door));
-})
+  res.send("Received control door req");
+  writeMQTT(Doortopic, JSON.stringify(Door));
+});
 
-app.put('/controlAlarm', (req, res) => {
-    const id = req.body.id;
-    const boardId = req.body.boardId;
-    const value = req.body.value;
-    console.log(id, boardId, value);
- 
-    Buzzer[boardId][id] = value;
+app.put("/controlAlarm", (req, res) => {
+  const id = req.body.id;
+  const boardId = req.body.boardId;
+  const value = req.body.value;
+  console.log(id, boardId, value);
 
-    res.send("Received control alarm req: " + id + " " + isOn);
-    writeMQTT(Buzztopic, JSON.stringify(Buzzer));
-})
+  Buzzer[boardId][id] = value;
 
-app.put('/controlCurtain', (req, res) => {
-    const id = req.body.id;
-    const boardId = req.body.boardId;
-    const action = req.body.action; // 0: close, 1:half, 2:full
-    console.log(id, boardId, action);
+  res.send("Received control alarm req: " + id + " " + isOn);
+  writeMQTT(Buzztopic, JSON.stringify(Buzzer));
+});
 
-     //Change Curtain value
-    Curtain[boardId][id] = action;
+app.put("/controlCurtain", (req, res) => {
+  const id = req.body.id;
+  const boardId = req.body.boardId;
+  const action = req.body.action; // 0: close, 1:half, 2:full
+  console.log(id, boardId, action);
 
-    // Write to Ada
-    res.send("Received control curtain req: " + id + " " + action);
-    writeMQTT(Curtopic, JSON.stringify(Curtain));
-})
+  //Change Curtain value
+  Curtain[boardId][id] = action;
 
-app.put('/controlLED', (req, res) => {
-    const id = req.body.id;
-    const boardId = req.body.boardId;
-    const value = req.body.value;
-    console.log(id, boardId, value);
+  // Write to Ada
+  res.send("Received control curtain req: " + id + " " + action);
+  writeMQTT(Curtopic, JSON.stringify(Curtain));
+});
 
-    //Change LED value
-    LED[boardId][id] = value;
-    
-    // Write to Ada
-    res.send("Received control LED req: " + boardId + " " + id + " " + value);
-    writeMQTT(LEDtopic, JSON.stringify(LED));
-})
+app.put("/controlLED", (req, res) => {
+  const id = req.body.id;
+  const boardId = req.body.boardId;
+  const value = req.body.value;
+  console.log(id, boardId, value);
 
-app.put('/controlAC', (req, res) => {
-    const id = req.body.id;
-    const boardId = req.body.boardId;
-    const power = req.body.power;
-    const temp = req.body.temp;
-    console.log(boardId, id, power, temp);
+  //Change LED value
+  LED[boardId][id] = value;
 
-    //Change AC value
-    AC[boardId][id]["power"] = power;
-    AC[boardId][id]["temp"] = temp
+  // Write to Ada
+  res.send("Received control LED req: " + boardId + " " + id + " " + value);
+  writeMQTT(LEDtopic, JSON.stringify(LED));
+});
 
-    // Write to Ada
-    res.send("Received control AC req: " + id + " " + isOn + " " + temp);
-    writeMQTT(ACtopic, JSON.stringify(AC));
-})
+app.put("/controlAC", (req, res) => {
+  const id = req.body.id;
+  const boardId = req.body.boardId;
+  const power = req.body.power ? 1 : 0;
+  const temp = req.body.temp;
+  console.log(boardId, id, power, temp);
+
+  //Change AC value
+  AC[boardId][id]["power"] = power;
+  AC[boardId][id]["temp"] = temp;
+
+  // Write to Ada
+  res.send("Received control AC req: " + id + " " + power + " " + temp);
+  writeMQTT(ACtopic, JSON.stringify(AC));
+});
 
 // GET request
 app.get('/getEnviStatus', (req, res) => {
-    const id = req.body.id;
+    const index = req.body.index;
     const boardId = req.body.boardId;
+    let type = "";
+    switch(req.body.typ){
+        case 3:
+            type = "DHT11";
+            break;
+        case 4:
+            type = "LDR";
+        case 5:
+            type = "gas";
+    }
+    try{
+        res.send(Sensor[boardId][type][index])
+    }
+    catch(err){
+        console.log(err);
+    }
 })
 
 // app.post('/addDevice', (req, res) => {
@@ -143,26 +171,32 @@ app.get('/getEnviStatus', (req, res) => {
 //     res.send("Add device successfully");
 // })
 
-client.on('message', (topic, message) => {
-    if (topic === LEDtopic) {
-        LED = JSON.parse(message);
-    }
-    if (topic === ACtopic) {
-        AC = JSON.parse(message);
-    }
-    if (topic === Buzztopic) {
-        Buzzer = JSON.parse(message);
-    }
-    if (topic === Curtopic) {
-        Curtain = JSON.parse(message);
-    }
-    if (topic === Doortopic) {
-        Door = JSON.parse(message);
-    }
-    if (topic === Sensortopic) {
-        Sensor = JSON.parse(message);
-    }
-})
+client.on("message", (topic, message) => {
+  if (topic === LEDtopic) {
+    LED = JSON.parse(message);
+    console.log(LED);
+  }
+  if (topic === ACtopic) {
+    AC = JSON.parse(message);
+    console.log(AC);
+  }
+  if (topic === Buzztopic) {
+    Buzzer = JSON.parse(message);
+    console.log(Buzzer);
+  }
+  if (topic === Curtopic) {
+    Curtain = JSON.parse(message);
+    console.log(Curtain);
+  }
+  if (topic === Doortopic) {
+    Door = JSON.parse(message);
+    console.log(Door);
+  }
+  if (topic === Sensortopic) {
+    Sensor = JSON.parse(message);
+    console.log(Sensor);
+  }
+});
 
 // LED: {"board1":{"0":0,"1":0}}
 // AC: {"board1":{"0":{"power":0,"temp":25}}}

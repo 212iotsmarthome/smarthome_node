@@ -1,0 +1,24 @@
+{
+  "led": {
+    "board1": { "0": 3, "1": 0 }
+  },
+  "ac": {
+    "board1": { "0": { "power": 0, "temp": 25 } }
+  },
+  "door": {
+    "board1": { "0": { "motor": 1, "lock": 0 } }
+  },
+  "curtain": {
+    "board1": { "0": 0 }
+  },
+  "sensor": {
+    "board1": {
+      "DHT11": { "0": { "humid": 64.0, "temperature": 31.8 } },
+      "LDR": { "1": 89, "2": 120 },
+      "gas": { "0": 0 }
+    }
+  },
+  "buzzer": {
+    "board1": { "0": 0 }
+  }
+}
