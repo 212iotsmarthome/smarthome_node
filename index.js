@@ -55,7 +55,7 @@ function writeMQTT(topic, str){
 }
 
 // Listen with React Native
-app.listen(3002, () => {
+app.listen(port, () => {
     console.log("Server is running on port 3002");
 });
 
@@ -128,6 +128,12 @@ app.put('/controlAC', (req, res) => {
     // Write to Ada
     res.send("Received control AC req: " + id + " " + isOn + " " + temp);
     writeMQTT(ACtopic, JSON.stringify(AC));
+})
+
+// GET request
+app.get('/getEnviStatus', (req, res) => {
+    const id = req.body.id;
+    const boardId = req.body.boardId;
 })
 
 // app.post('/addDevice', (req, res) => {
