@@ -3,7 +3,7 @@ const express = require("express");
 // const cors = require("cors");
 const mqtt = require("mqtt");
 const app = express();
-const port = 3002;
+const port = 3003;
 
 app.use(express.json());
 
@@ -68,7 +68,7 @@ function writeMQTT(topic, str) {
 
 // Listen with React Native
 app.listen(port, () => {
-    console.log("Server is running on port 3002");
+    console.log("Server is running on port " + port);
 });
 
 // PUT request
@@ -144,23 +144,28 @@ app.put("/controlAC", (req, res) => {
 
 // GET request
 app.get('/getEnviStatus', (req, res) => {
-    const index = req.body.index;
-    const boardId = req.body.boardId;
-    let type = "";
-    switch(req.body.typ){
-        case 3:
-            type = "DHT11";
+    const index = req.query.index;
+    console.log(index);
+    const boardId = req.query.boardId;
+    console.log(req.query);
+    let type = '';
+    switch(req.query.typ){
+        case '3':
+            type = 'DHT11';
             break;
-        case 4:
-            type = "LDR";
-        case 5:
-            type = "gas";
+        case '4':
+            type = 'LDR';
+            break;
+        case '5':
+            type = 'gas';
+            break;
     }
+    console.log(type);
     try{
-        res.send(Sensor[boardId][type][index])
+      res.send(Sensor[boardId][type][index]);
     }
     catch(err){
-        console.log(err);
+      console.log(err);
     }
 })
 
