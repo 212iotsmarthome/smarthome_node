@@ -1,4 +1,7 @@
 const express = require("express");
+const req = require("express/lib/request");
+const { json } = require("express/lib/response");
+const res = require("express/lib/response");
 // var localIpV4Address = require("local-ipv4-address");
 // const cors = require("cors");
 const mqtt = require("mqtt");
@@ -141,6 +144,32 @@ app.put("/controlAC", (req, res) => {
   res.send("Received control AC req: " + id + " " + power + " " + temp);
   writeMQTT(ACtopic, JSON.stringify(AC));
 });
+
+app.get('/getLED', (req, res) => {
+  const boardID = req.query.boardID
+  const index = req.query.index
+  res.send({ value: LED[boardID][index] })
+  // res.send(LED.boardID.index)
+})
+
+app.get('/getAC', (req, res) => {
+  const boardID = req.query.boardID
+  const index = req.query.index
+  res.send({ value: AC[boardID][index] })
+})
+
+app.get('/getDoor', (req, res) => {
+  const boardID = req.query.boardID
+  const index = req.query.index
+  res.send({ value: Door[boardID][index] })
+})
+
+app.get('/getCurtain', (req, res) => {
+  const boardID = req.query.boardID
+  const index = req.query.index
+  res.send({ value: Curtain[boardID][index] })
+})
+
 
 // app.post('/addDevice', (req, res) => {
 //     const code = req.body.code;
