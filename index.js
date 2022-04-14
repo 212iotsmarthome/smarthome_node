@@ -1,14 +1,16 @@
+
 const express = require("express");
 const req = require("express/lib/request");
-const { json } = require("express/lib/response");
 const res = require("express/lib/response");
-// var localIpV4Address = require("local-ipv4-address");
-// const cors = require("cors");
+const { json } = require("express/lib/response");
+const { getSchedule } = require("./config");
 const mqtt = require("mqtt");
+const cors = require("cors");
 const app = express();
 const port = 3003;
-
+app.use(cors());
 app.use(express.json());
+// var localIpV4Address = require("local-ipv4-address");
 
 // localIpV4Address().then(function (ipAddress) {
 //   console.log("My IP address is " + ipAddress);
@@ -38,7 +40,7 @@ var client = mqtt.connect("mqtts://io.adafruit.com", {
   password: "aio_cSFh41uOGJgJ3IyiK0f0evTUtDOw",
 });
 
-client.on("connect", () => {
+client.on("connect", async () => {
   console.log("Connected");
   client.subscribe([LEDtopic], () => {
     console.log(`Subscribe to topic '${LEDtopic}'`);
@@ -58,6 +60,7 @@ client.on("connect", () => {
   client.subscribe([Sensortopic], () => {
     console.log(`Subscribe to topic '${Sensortopic}'`);
   });
+  console.log(await getSchedule());
 });
 
 // Publish on AdafruitIO via MQTT
@@ -148,8 +151,7 @@ app.put("/controlAC", (req, res) => {
 // GET request
 app.get('/getEnviStatus', (req, res) => {
     const index = req.query.index;
-    const boardID = req.query.boardId;
-    console.log(req.query);
+    const boardID = req.query.boardID;
     let type = '';
     switch(req.query.typ){
         case '3':
@@ -162,7 +164,7 @@ app.get('/getEnviStatus', (req, res) => {
             type = 'gas';
             break;
     }
-    console.log(type);
+    console.log(Sensor[boardID]);
     try{
       res.send(Sensor[boardID][type][index]);
     }
@@ -196,6 +198,12 @@ app.get('/getCurtain', (req, res) => {
   res.send({ value: Curtain[boardID][index] })
 })
 
+app.get('/test', async(req, res) => {
+  const snapshot = await Schedule.get();
+  res.send(snapshot);
+})
+
+// Receive MQTT message 
 client.on("message", (topic, message) => {
   if (topic === LEDtopic) {
     LED = JSON.parse(message);

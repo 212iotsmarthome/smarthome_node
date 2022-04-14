@@ -1,34 +1,33 @@
 Arguments: 
-  C:\Program Files\nodejs\node.exe C:\Users\dongp\AppData\Roaming\npm\node_modules\yarn\bin\yarn.js add ipv4-local-address
+  C:\Program Files\nodejs\node.exe C:\Users\PC\AppData\Roaming\npm\node_modules\yarn\bin\yarn.js add dontenv
 
 PATH: 
-  C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\Python39\Scripts\;C:\Python39\;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR;C:\Program Files\Intel\WiFi\bin\;C:\Program Files\Common Files\Intel\WirelessCommon\;C:\Program Files\dotnet\;C:\Program Files\Microsoft SQL Server\130\Tools\Binn\;C:\Program Files\MATLAB\R2018a\runtime\win64;C:\Program Files\MATLAB\R2018a\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\nodejs\;C:\ProgramData\chocolatey\bin;C:\Program Files\Git\cmd;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files (x86)\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\Microsoft SQL Server\150\DTS\Binn\;C:\Program Files (x86)\Microsoft SQL Server\150\DTS\Binn\;C:\Program Files\Azure Data Studio\bin;C:\Program Files\Java\jdk-17\bin;C:\Program Files\Java\jre1.8.0_301\bin;C:\Program Files\MySQL\MySQL Shell 8.0\bin\;C:\Program Files (x86)\Haskell\bin;C:\ghc\ghc-7.6.1\bin;C:\Users\dongp\AppData\Local\Programs\Python\Python38-32\Scripts\;C:\Users\dongp\AppData\Local\Programs\Python\Python38-32\;C:\Users\dongp\AppData\Local\Microsoft\WindowsApps;C:\Users\dongp\AppData\Local\Programs\Microsoft VS Code\bin;C:\MinGW\bin;C:\Users\dongp\.dotnet\tools;C:\Program Files\JetBrains\PyCharm Community Edition 2020.3\bin;C:\Program Files\JetBrains\CLion 2021.1.2\bin;C:\Users\dongp\AppData\Roaming\npm;C:\Users\dongp\flutter\bin
+  C:\ProgramData\Oracle\Java\javapath;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files (x86)\Common Files\Oracle\Java\javapath;C:\Program Files\Python310\Scripts\;C:\Program Files\Python310\;C:\Windows\system32;C:\Windows;C:\Windows\System32\Wbem;C:\Windows\System32\WindowsPowerShell\v1.0\;C:\Windows\System32\OpenSSH\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\NVIDIA Corporation\NVIDIA NvDLISR;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files (x86)\Windows Live\Shared;C:\Program Files\dotnet\;C:\Program Files\Microsoft SQL Server\130\Tools\Binn\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Git\cmd;C:\Users\PC\AppData\Local\Programs\Python\Python39;C:\Users\PC\AppData\Local\Programs\Python\Python39\Scripts;C:\Program Files\Java\jdk-17\bin;C:\Program Files (x86)\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\Microsoft SQL Server\150\DTS\Binn\;C:\Program Files (x86)\Microsoft SQL Server\150\DTS\Binn\;C:\Program Files\Azure Data Studio\bin;C:\Program Files\nodejs\;C:\Program Files\Java\jdk-17.0.1\bin;C:\Program Files (x86)\dotnet\;C:\Program Files\MySQL\MySQL Shell 8.0\bin\;C:\Program Files\Java\jdk-17.0.1\bin;%JRE_HOME%\bin;C:\Program Files\OpenSSL-Win64\bin\;C:\Program Files (x86)\Haskell\bin;C:\ghc\ghc-7.6.1\bin;C:\Users\PC\AppData\Local\Microsoft\WindowsApps;C:\Users\PC\AppData\Local\Programs\Microsoft VS Code\bin;C:\Users\PC\.dotnet\tools;C:\Program Files\Azure Data Studio\bin;C:\Users\PC\AppData\Roaming\npm;D:\My_Stuff\PPL\BTL\Test_ANTLR\bin;C:\Users\PC\AppData\Local\atom\bin
 
 Yarn version: 
-  1.22.10
+  1.22.17
 
 Node version: 
-  14.17.3
+  16.13.0
 
 Platform: 
   win32 x64
 
 Trace: 
-  Error: https://registry.yarnpkg.com/ipv4-local-address: Not found
-      at Request.params.callback [as _callback] (C:\Users\dongp\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:66988:18)
-      at Request.self.callback (C:\Users\dongp\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:140662:22)
-      at Request.emit (events.js:375:28)
-      at Request.<anonymous> (C:\Users\dongp\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:141634:10)
-      at Request.emit (events.js:375:28)
-      at IncomingMessage.<anonymous> (C:\Users\dongp\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:141556:12)
-      at Object.onceWrapper (events.js:481:28)
-      at IncomingMessage.emit (events.js:387:35)
-      at endReadableNT (internal/streams/readable.js:1317:12)
-      at processTicksAndRejections (internal/process/task_queues.js:82:21)
+  Error: https://registry.yarnpkg.com/dontenv: Not found
+      at Request.params.callback [as _callback] (C:\Users\PC\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:67029:18)
+      at Request.self.callback (C:\Users\PC\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:140883:22)
+      at Request.emit (node:events:390:28)
+      at Request.<anonymous> (C:\Users\PC\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:141855:10)
+      at Request.emit (node:events:390:28)
+      at IncomingMessage.<anonymous> (C:\Users\PC\AppData\Roaming\npm\node_modules\yarn\lib\cli.js:141777:12)
+      at Object.onceWrapper (node:events:509:28)
+      at IncomingMessage.emit (node:events:402:35)
+      at endReadableNT (node:internal/streams/readable:1343:12)
+      at processTicksAndRejections (node:internal/process/task_queues:83:21)
 
 npm manifest: 
   {
-  
     "name": "backend",
     "version": "1.0.0",
     "main": "index.js",
@@ -40,6 +39,7 @@ npm manifest:
       "adafruit-io": "^4.4.0",
       "cors": "^2.8.5",
       "express": "^4.17.3",
+      "local-ipv4-address": "^0.0.2",
       "mqtt": "^4.3.7",
       "mqtt-topping": "^0.8.13",
       "nodemon": "^2.0.15"
@@ -1464,6 +1464,13 @@ Lockfile:
     dependencies:
       immediate "~3.0.5"
   
+  local-ipv4-address@^0.0.2:
+    version "0.0.2"
+    resolved "https://registry.yarnpkg.com/local-ipv4-address/-/local-ipv4-address-0.0.2.tgz#0d6507101083b37205bf7297b92b34aa660291b7"
+    integrity sha1-DWUHEBCDs3IFv3KXuSs0qmYCkbc=
+    dependencies:
+      q "1.5.0"
+  
   localforage@^1.3.0:
     version "1.10.0"
     resolved "https://registry.yarnpkg.com/localforage/-/localforage-1.10.0.tgz#5c465dc5f62b2807c3a84c0c6a1b1b3212781dd4"
@@ -2185,6 +2192,11 @@ Lockfile:
     integrity sha512-l1jNAspIBSFqbT+y+5FosojNpVpF94nlI+wDUpqP9enwOTfHx9f0gh5nB96vl+6yTpsJsypeNrwfzPrKuHB41A==
     dependencies:
       escape-goat "^2.0.0"
+  
+  q@1.5.0:
+    version "1.5.0"
+    resolved "https://registry.yarnpkg.com/q/-/q-1.5.0.tgz#dd01bac9d06d30e6f219aecb8253ee9ebdc308f1"
+    integrity sha1-3QG6ydBtMObyGa7LglPunr3DCPE=
   
   q@^1.4.1:
     version "1.5.1"
