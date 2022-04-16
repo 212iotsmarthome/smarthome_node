@@ -3,7 +3,7 @@ const express = require("express");
 const req = require("express/lib/request");
 const res = require("express/lib/response");
 const { json } = require("express/lib/response");
-const { getSchedule } = require("./config");
+const { getDocument, addDocument, editDocumentById, deleteDocumentById } = require("./config");
 const mqtt = require("mqtt");
 const cors = require("cors");
 const app = express();
@@ -33,6 +33,87 @@ var LED = jsonModel.led,
   Door = jsonModel.door,
   Sensor = jsonModel.sensor;
 
+var Schedules;
+var Devices;
+
+async function decodeAction (boardID, index, deviceID, str){
+  //LED
+  if(str == 'Light off'){
+    LED[boardID][index] = 0;
+    writeMQTT(LEDtopic, JSON.stringify(LED));
+  }
+  if(str == 'Low brightness'){
+    LED[boardID][index] = 1;
+    writeMQTT(LEDtopic, JSON.stringify(LED));
+  }
+  if(str == 'Medium brightness'){
+    LED[boardID][index] = 2;
+    writeMQTT(LEDtopic, JSON.stringify(LED));
+  }
+  if(str == 'High brightness'){
+    LED[boardID][index] = 3;
+    writeMQTT(LEDtopic, JSON.stringify(LED));
+  }
+  // AC
+  if(str == 'AC off'){
+    AC[boardID][index]["power"] = 0;
+    writeMQTT(ACtopic, JSON.stringify(AC));
+  }
+  if(str == 'AC on'){
+    AC[boardID][index]["power"] = 1;
+    writeMQTT(ACtopic, JSON.stringify(AC));
+  }
+  // Door
+  if(str == 'Open door'){
+    Door[boardID][index]["motor"] = 0;
+    Door[boardID][index]["lock"] = 0;
+    writeMQTT(Doortopic, JSON.stringify(Door));
+  }
+  if(str == 'Close door'){
+    Door[boardID][index]["motor"] = 1;
+    writeMQTT(Doortopic, JSON.stringify(Door));
+  }
+  if(str == 'Unlock door'){
+    Door[boardID][index]["lock"] = 0;
+    writeMQTT(Doortopic, JSON.stringify(Door));
+  }
+  if(str == 'Lock door'){
+    Door[boardID][index]["motor"] = 1;
+    Door[boardID][index]["lock"] = 1;
+    writeMQTT(Doortopic, JSON.stringify(Door));
+  }
+  // Curtain
+  if(str == 'Close'){
+    Curtain[boardID][index] = 0;
+    writeMQTT(Curtopic, JSON.stringify(Curtain));
+  }
+  if(str == 'Half-open'){
+    Curtain[boardID][index] = 1;
+    writeMQTT(Curtopic, JSON.stringify(Curtain));
+    console.log(1);
+  }
+  if(str == 'Full-open'){
+    Curtain[boardID][index] = 2;
+    writeMQTT(Curtopic, JSON.stringify(Curtain));
+  }
+  // Alarm
+  if(str == 'Alarm stand-by'){
+    Envis = await getDocument("EnviSensor");
+    selectedEnvi = Envis.find(Envi => Envi.ID == deviceID);
+    await editDocumentById("EnviSensor", selectedEnvi.id, {
+      setBuzzer: true
+    })
+  }
+  if(str == 'Alarm off'){
+    Envis = await getDocument("EnviSensor");
+    selectedEnvi = Envis.find(Envi => Envi.ID == deviceID);
+    await editDocumentById("EnviSensor", selectedEnvi.id, {
+      setBuzzer: false
+    })
+  }
+  return;
+}
+
 // MQTT connect
 var client = mqtt.connect("mqtts://io.adafruit.com", {
   port: 8883,
@@ -60,8 +141,25 @@ client.on("connect", async () => {
   client.subscribe([Sensortopic], () => {
     console.log(`Subscribe to topic '${Sensortopic}'`);
   });
-  console.log(await getSchedule());
 });
+
+const getSchedule = setInterval(async () => {
+  Schedules = await getDocument("Schedule");
+  Devices = await getDocument("Device");
+  List = Schedules.filter(Schedule => Schedule.Time.seconds < (new Date().getTime() / 1000));
+  if(List.length > 0){
+    List.forEach(element => {
+      console.log(element)
+      for(let i = 0; i < Devices.length; i++){
+        if(Devices[i].ID == element.DeviceID){
+          decodeAction(Devices[i].boardID, Devices[i].index, Devices[i].ID, element.Action);
+          break;
+        } 
+      }
+    });
+  }
+}, 1000*10);
+
 
 // Publish on AdafruitIO via MQTT
 function writeMQTT(topic, str) {
@@ -78,6 +176,36 @@ app.listen(port, () => {
 });
 
 // PUT request
+app.put("/controlLED", (req, res) => {
+  const id = req.body.id;
+  const boardId = req.body.boardId;
+  const value = req.body.value;
+  console.log(id, boardId, value);
+
+  //Change LED value
+  LED[boardId][id] = value;
+
+  // Write to Ada
+  res.send("Received control LED req: " + boardId + " " + id + " " + value);
+  writeMQTT(LEDtopic, JSON.stringify(LED));
+});
+
+app.put("/controlAC", (req, res) => {
+  const id = req.body.id;
+  const boardId = req.body.boardId;
+  const power = req.body.power ? 1 : 0;
+  const temp = req.body.temp;
+  console.log(boardId, id, power, temp);
+
+  //Change AC value
+  AC[boardId][id]["power"] = power;
+  AC[boardId][id]["temp"] = temp;
+
+  // Write to Ada
+  res.send("Received control AC req: " + id + " " + power + " " + temp);
+  writeMQTT(ACtopic, JSON.stringify(AC));
+});
+
 app.put("/controlDoor", (req, res) => {
   const id = req.body.id;
   const boardId = req.body.boardId;
@@ -118,55 +246,22 @@ app.put("/controlCurtain", (req, res) => {
   writeMQTT(Curtopic, JSON.stringify(Curtain));
 });
 
-app.put("/controlLED", (req, res) => {
-  const id = req.body.id;
-  const boardId = req.body.boardId;
-  const value = req.body.value;
-  console.log(id, boardId, value);
 
-  //Change LED value
-  LED[boardId][id] = value;
-
-  // Write to Ada
-  res.send("Received control LED req: " + boardId + " " + id + " " + value);
-  writeMQTT(LEDtopic, JSON.stringify(LED));
-});
-
-app.put("/controlAC", (req, res) => {
-  const id = req.body.id;
-  const boardId = req.body.boardId;
-  const power = req.body.power ? 1 : 0;
-  const temp = req.body.temp;
-  console.log(boardId, id, power, temp);
-
-  //Change AC value
-  AC[boardId][id]["power"] = power;
-  AC[boardId][id]["temp"] = temp;
-
-  // Write to Ada
-  res.send("Received control AC req: " + id + " " + power + " " + temp);
-  writeMQTT(ACtopic, JSON.stringify(AC));
-});
 
 // GET request
 app.get('/getEnviStatus', (req, res) => {
-    const index = req.query.index;
     const boardID = req.query.boardID;
-    let type = '';
-    switch(req.query.typ){
-        case '3':
-            type = 'DHT11';
-            break;
-        case '4':
-            type = 'LDR';
-            break;
-        case '5':
-            type = 'gas';
-            break;
-    }
-    console.log(Sensor[boardID]);
+    const Dindex = req.query.Dindex;
+    const Lindex = req.query.Lindex;
+    const Gindex = req.query.Gindex;
     try{
-      res.send(Sensor[boardID][type][index]);
+      console.log(Sensor[boardID]["DHT11"][Dindex], Dindex)
+      res.send({value: {
+        humid: Sensor[boardID]["DHT11"][Dindex]["humid"],
+        temperature: Sensor[boardID]["DHT11"][Dindex]["temperature"],
+        brightness: Sensor[boardID]["LDR"][Lindex],
+        gas: Sensor[boardID]["gas"][Gindex],
+      } });
     }
     catch(err){
       console.log(err);
@@ -177,7 +272,6 @@ app.get('/getLED', (req, res) => {
   const boardID = req.query.boardID
   const index = req.query.index
   res.send({ value: LED[boardID][index] })
-  // res.send(LED.boardID.index)
 })
 
 app.get('/getAC', (req, res) => {
@@ -196,11 +290,6 @@ app.get('/getCurtain', (req, res) => {
   const boardID = req.query.boardID
   const index = req.query.index
   res.send({ value: Curtain[boardID][index] })
-})
-
-app.get('/test', async(req, res) => {
-  const snapshot = await Schedule.get();
-  res.send(snapshot);
 })
 
 // Receive MQTT message 
@@ -234,7 +323,7 @@ client.on("message", (topic, message) => {
 // LED: {"board1":{"0":0,"1":0}}
 // AC: {"board1":{"0":{"power":0,"temp":25}}}
 // Buzzer: {"board1":{"0":0}}
-// Envi: {"board1":{"DHT11":{"0":{"humid":64.0,"temperature":31.8}},"LDR":{"1":89,"2":120},"gas":{"0":0}}}
+// Envi: {"board1":{"DHT11":{"0":{"humid":64.0,"temperature":31.8}},"LDR":{"1":89},"gas":{"0":0}}}
 // Door: {"board1":{"0":{"motor":1,"lock":0}}}
 // Curtain: {"board1":{"0":0}}
 
