@@ -19,24 +19,25 @@ app.use(express.json());
 
 const username = "namdiep239";
 const LEDtopic = "namdiep239/feeds/bbc-led",
-  ACtopic = "namdiep239/feeds/bbc-conditioner",
-  Buzztopic = "namdiep239/feeds/bbc-buzzer",
-  Curtopic = "namdiep239/feeds/bbc-curtain",
-  Doortopic = "namdiep239/feeds/bbc-door",
-  Sensortopic = "namdiep239/feeds/bbc-sensor";
+      ACtopic = "namdiep239/feeds/bbc-conditioner",
+      Buzztopic = "namdiep239/feeds/bbc-buzzer",
+      Curtopic = "namdiep239/feeds/bbc-curtain",
+      Doortopic = "namdiep239/feeds/bbc-door",
+      Sensortopic = "namdiep239/feeds/bbc-sensor";
 
-var jsonModel = require("./model.json");
-var LED = jsonModel.led,
-  AC = jsonModel.ac,
-  Buzzer = jsonModel.buzzer,
-  Curtain = jsonModel.curtain,
-  Door = jsonModel.door,
-  Sensor = jsonModel.sensor;
+const ScheduleInterval = 10;
 
-var Schedules;
-var Devices;
+var   jsonModel = require("./model.json");
+var   LED = jsonModel.led,
+      AC = jsonModel.ac,
+      Buzzer = jsonModel.buzzer,
+      Curtain = jsonModel.curtain,
+      Door = jsonModel.door,
+      Sensor = jsonModel.sensor;
 
-async function decodeAction (boardID, index, deviceID, str){
+var Schedules, Devices, Envis;
+
+async function decodeAction (boardID, index, deviceID, sid, str){
   //LED
   if(str == 'Light off'){
     LED[boardID][index] = 0;
@@ -81,6 +82,12 @@ async function decodeAction (boardID, index, deviceID, str){
     Door[boardID][index]["motor"] = 1;
     Door[boardID][index]["lock"] = 1;
     writeMQTT(Doortopic, JSON.stringify(Door));
+    List = await getDocument("SmartDoor");
+    let selected = List.find(e => e.ID == deviceID);
+    editDocumentById("SmartDoor", selected.id, {
+      scheduleList: selected.scheduleList.filter(e => e != sid)
+    })
+    return;
   }
   // Curtain
   if(str == 'Close'){
@@ -89,8 +96,7 @@ async function decodeAction (boardID, index, deviceID, str){
   }
   if(str == 'Half-open'){
     Curtain[boardID][index] = 1;
-    writeMQTT(Curtopic, JSON.stringify(Curtain));
-    console.log(1);
+    writeMQTT(Curtopic, JSON.stringify(Curtain))
   }
   if(str == 'Full-open'){
     Curtain[boardID][index] = 2;
@@ -101,15 +107,19 @@ async function decodeAction (boardID, index, deviceID, str){
     Envis = await getDocument("EnviSensor");
     selectedEnvi = Envis.find(Envi => Envi.ID == deviceID);
     await editDocumentById("EnviSensor", selectedEnvi.id, {
+      scheduleList: selectedEnvi.scheduleList.filter(e => e != sid),
       setBuzzer: true
     })
+    return;
   }
   if(str == 'Alarm off'){
     Envis = await getDocument("EnviSensor");
     selectedEnvi = Envis.find(Envi => Envi.ID == deviceID);
     await editDocumentById("EnviSensor", selectedEnvi.id, {
+      scheduleList: selectedEnvi.scheduleList.filter(e => e != sid),
       setBuzzer: false
     })
+    return;
   }
   return;
 }
@@ -148,17 +158,56 @@ const getSchedule = setInterval(async () => {
   Devices = await getDocument("Device");
   List = Schedules.filter(Schedule => Schedule.Time.seconds < (new Date().getTime() / 1000));
   if(List.length > 0){
-    List.forEach(element => {
-      console.log(element)
+    List.forEach(async element => {
       for(let i = 0; i < Devices.length; i++){
         if(Devices[i].ID == element.DeviceID){
-          decodeAction(Devices[i].boardID, Devices[i].index, Devices[i].ID, element.Action);
+          let collection = "Device";
+          switch(Devices[i].type){
+            case 1:
+              collection = "LED";
+              break;
+            case 2:
+              collection = "AC";
+              break;
+            case 3:
+              collection = "EnviSensor";
+              break;
+            case 6:
+              collection = "SmartCurtain";
+              break;
+            case 7:
+              collection = "SmartDoor";
+              break;
+          }
+          let Info = await getDocument(collection);
+
+          let selected = Info.find(e => e.ID == element.DeviceID);
+          await decodeAction(Devices[i].boardID, Devices[i].index, Devices[i].ID, element.id, element.Action);
+          await deleteDocumentById("Schedule", element.id);
+          await editDocumentById(collection, selected.id, {
+            scheduleList: selected.scheduleList.filter(e => e != element.id)
+          })
+          if(element.Daily){
+            let sid = await addDocument("Schedule", {
+              Action: element.Action,
+              Daily: true,
+              DeviceID: element.DeviceID,
+              Time: new Date(element.Time.toDate().getTime() + 24 * 60 * 60 * 1000)
+            })
+            // console.log(selected.id);
+            await editDocumentById(collection, selected.id, {
+              scheduleList: [...selected.scheduleList, sid]
+            })
+          }
           break;
         } 
       }
     });
   }
-}, 1000*10);
+  else{
+    console.log("No Schedule !");
+  }
+}, 1000 * ScheduleInterval);
 
 
 // Publish on AdafruitIO via MQTT
@@ -316,6 +365,25 @@ client.on("message", (topic, message) => {
   }
   if (topic === Sensortopic) {
     Sensor = JSON.parse(message);
+    Envis = await getDocument("EnviSensor");
+    let Devices = await getDocument("Device");
+    Envis.forEach(async element => {
+      for(let i = 0; i < Devices.length; i++){
+        if(Devices[i].ID == element.ID){
+          if(Sensor[Devices[i].boardID]["DHT11"][element.DHT_index]["temperature"] < 50 && Sensor[Devices[i].boardID]["gas"][element.Gas_index] == 0){
+            Buzzer[Devices[i].boardID][element.Buzzer_index] = 0;
+            writeMQTT(Buzztopic, JSON.stringify(Buzzer));
+          }
+          else{
+            if(element.setBuzzer){
+              Buzzer[Devices[i].boardID][element.Buzzer_index] = 1;
+              writeMQTT(Buzztopic, JSON.stringify(Buzzer));
+            }
+            // Add Log
+          }
+        }
+      }
+    })
     console.log(Sensor);
   }
 });
