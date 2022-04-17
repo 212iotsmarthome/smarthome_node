@@ -3,7 +3,7 @@ const express = require("express");
 const req = require("express/lib/request");
 const res = require("express/lib/response");
 const { json } = require("express/lib/response");
-const { getDocument, addDocument, editDocumentById, deleteDocumentById } = require("./config");
+const { getDocument, addDocument, editDocumentById, deleteDocumentById, addLog } = require("./config");
 const mqtt = require("mqtt");
 const cors = require("cors");
 const app = express();
@@ -37,92 +37,155 @@ var   LED = jsonModel.led,
 
 var Schedules, Devices, Envis;
 
+// Publish on AdafruitIO via MQTT
+function writeMQTT(topic, str) {
+  client.publish(topic, str, { qos: 0, retain: false }, (error) => {
+    if (error) {
+      console.error(error);
+    }
+  });
+}
+
+// Execute the Schedule
 async function decodeAction (boardID, index, deviceID, sid, str){
   //LED
   if(str == 'Light off'){
     LED[boardID][index] = 0;
     writeMQTT(LEDtopic, JSON.stringify(LED));
+    await addLog({
+      content: "LED (#"+ deviceID + ") has been turned off by the schedule",
+      deviceID: deviceID
+    });
   }
   if(str == 'Low brightness'){
     LED[boardID][index] = 1;
     writeMQTT(LEDtopic, JSON.stringify(LED));
+    await addLog({
+      content: "LED (#"+ deviceID + ") has been set to Low brightness by the schedule",
+      deviceID: deviceID
+    });
   }
   if(str == 'Medium brightness'){
     LED[boardID][index] = 2;
     writeMQTT(LEDtopic, JSON.stringify(LED));
+    await addLog({
+      content: "LED (#"+ deviceID + ") has been set to Medium brightness by the schedule",
+      deviceID: deviceID
+    });
   }
   if(str == 'High brightness'){
     LED[boardID][index] = 3;
     writeMQTT(LEDtopic, JSON.stringify(LED));
+    await addLog({
+      content: "LED (#"+ deviceID + ") has been set to High brightness by the schedule",
+      deviceID: deviceID
+    });
   }
   // AC
   if(str == 'AC off'){
     AC[boardID][index]["power"] = 0;
     writeMQTT(ACtopic, JSON.stringify(AC));
+    await addLog({
+      content: "AC (#"+ deviceID + ") has been turned off by the schedule",
+      deviceID: deviceID
+    });
   }
   if(str == 'AC on'){
     AC[boardID][index]["power"] = 1;
     writeMQTT(ACtopic, JSON.stringify(AC));
+    await addLog({
+      content: "AC (#"+ deviceID + ") has been turned on by the schedule",
+      deviceID: deviceID
+    });
   }
   // Door
   if(str == 'Open door'){
     Door[boardID][index]["motor"] = 0;
     Door[boardID][index]["lock"] = 0;
     writeMQTT(Doortopic, JSON.stringify(Door));
+    await addLog({
+      content: "Door (#"+ deviceID + ") has been opened by the schedule",
+      deviceID: deviceID
+    });
   }
   if(str == 'Close door'){
     Door[boardID][index]["motor"] = 1;
     writeMQTT(Doortopic, JSON.stringify(Door));
+    await addLog({
+      content: "Door (#"+ deviceID + ") has been closed by the schedule",
+      deviceID: deviceID
+    });
   }
   if(str == 'Unlock door'){
     Door[boardID][index]["lock"] = 0;
     writeMQTT(Doortopic, JSON.stringify(Door));
+    await addLog({
+      content: "Door (#"+ deviceID + ") has been unlocked by the schedule",
+      deviceID: deviceID
+    });
   }
   if(str == 'Lock door'){
     Door[boardID][index]["motor"] = 1;
     Door[boardID][index]["lock"] = 1;
     writeMQTT(Doortopic, JSON.stringify(Door));
-    List = await getDocument("SmartDoor");
-    let selected = List.find(e => e.ID == deviceID);
-    editDocumentById("SmartDoor", selected.id, {
-      scheduleList: selected.scheduleList.filter(e => e != sid)
-    })
-    return;
+    await addLog({
+      content: "Door (#"+ deviceID + ") has been locked by the schedule",
+      deviceID: deviceID
+    });
   }
   // Curtain
   if(str == 'Close'){
     Curtain[boardID][index] = 0;
     writeMQTT(Curtopic, JSON.stringify(Curtain));
+    await addLog({
+      content: "Curtain (#"+ deviceID + ") has been closed by the schedule",
+      deviceID: deviceID
+    });
   }
   if(str == 'Half-open'){
     Curtain[boardID][index] = 1;
-    writeMQTT(Curtopic, JSON.stringify(Curtain))
+    writeMQTT(Curtopic, JSON.stringify(Curtain));
+    await addLog({
+      content: "Curtain (#"+ deviceID + ") has been half-opened by the schedule",
+      deviceID: deviceID
+    });
   }
   if(str == 'Full-open'){
     Curtain[boardID][index] = 2;
     writeMQTT(Curtopic, JSON.stringify(Curtain));
+    await addLog({
+      content: "Curtain (#"+ deviceID + ") has been opened by the schedule",
+      deviceID: deviceID
+    });
   }
   // Alarm
   if(str == 'Alarm stand-by'){
     Envis = await getDocument("EnviSensor");
     selectedEnvi = Envis.find(Envi => Envi.ID == deviceID);
     await editDocumentById("EnviSensor", selectedEnvi.id, {
-      scheduleList: selectedEnvi.scheduleList.filter(e => e != sid),
       setBuzzer: true
-    })
+    });
+    await addLog({
+      content: "Alarm (#"+ deviceID + ") has been set to stand-by by the schedule",
+      deviceID: deviceID
+    });
     return;
   }
   if(str == 'Alarm off'){
     Envis = await getDocument("EnviSensor");
     selectedEnvi = Envis.find(Envi => Envi.ID == deviceID);
     await editDocumentById("EnviSensor", selectedEnvi.id, {
-      scheduleList: selectedEnvi.scheduleList.filter(e => e != sid),
       setBuzzer: false
     })
+    await addLog({
+      content: "Alarm (#"+ deviceID + ") has been set to slient by the schedule",
+      deviceID: deviceID
+    });
     return;
   }
   return;
 }
+
 
 // MQTT connect
 var client = mqtt.connect("mqtts://io.adafruit.com", {
@@ -153,6 +216,7 @@ client.on("connect", async () => {
   });
 });
 
+// Examine the Schedules
 const getSchedule = setInterval(async () => {
   Schedules = await getDocument("Schedule");
   Devices = await getDocument("Device");
@@ -180,21 +244,21 @@ const getSchedule = setInterval(async () => {
               break;
           }
           let Info = await getDocument(collection);
-
           let selected = Info.find(e => e.ID == element.DeviceID);
           await decodeAction(Devices[i].boardID, Devices[i].index, Devices[i].ID, element.id, element.Action);
+          // Remove Schedule
           await deleteDocumentById("Schedule", element.id);
           await editDocumentById(collection, selected.id, {
             scheduleList: selected.scheduleList.filter(e => e != element.id)
           })
           if(element.Daily){
+            // Add new Schedule
             let sid = await addDocument("Schedule", {
               Action: element.Action,
               Daily: true,
               DeviceID: element.DeviceID,
               Time: new Date(element.Time.toDate().getTime() + 24 * 60 * 60 * 1000)
             })
-            // console.log(selected.id);
             await editDocumentById(collection, selected.id, {
               scheduleList: [...selected.scheduleList, sid]
             })
@@ -209,15 +273,6 @@ const getSchedule = setInterval(async () => {
   }
 }, 1000 * ScheduleInterval);
 
-
-// Publish on AdafruitIO via MQTT
-function writeMQTT(topic, str) {
-  client.publish(topic, str, { qos: 0, retain: false }, (error) => {
-    if (error) {
-      console.error(error);
-    }
-  });
-}
 
 // Listen with React Native
 app.listen(port, () => {
@@ -295,8 +350,6 @@ app.put("/controlCurtain", (req, res) => {
   writeMQTT(Curtopic, JSON.stringify(Curtain));
 });
 
-
-
 // GET request
 app.get('/getEnviStatus', (req, res) => {
     const boardID = req.query.boardID;
@@ -365,8 +418,8 @@ client.on("message", (topic, message) => {
   }
   if (topic === Sensortopic) {
     Sensor = JSON.parse(message);
-    Envis = await getDocument("EnviSensor");
-    let Devices = await getDocument("Device");
+    Envis = getDocument("EnviSensor");
+    let Devices = getDocument("Device");
     Envis.forEach(async element => {
       for(let i = 0; i < Devices.length; i++){
         if(Devices[i].ID == element.ID){
@@ -375,6 +428,10 @@ client.on("message", (topic, message) => {
             writeMQTT(Buzztopic, JSON.stringify(Buzzer));
           }
           else{
+            await addLog({
+              content: "Envi (#"+ element.ID + ") has detected dangerous statistic, please check your house.",
+              deviceID: element.ID
+            });
             if(element.setBuzzer){
               Buzzer[Devices[i].boardID][element.Buzzer_index] = 1;
               writeMQTT(Buzztopic, JSON.stringify(Buzzer));

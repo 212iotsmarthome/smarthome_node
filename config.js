@@ -53,5 +53,18 @@ async function editDocumentById (collectionParam, id, data) {
     }
 }
 
-module.exports = { getDocument, addDocument, deleteDocumentById, editDocumentById };
+async function addLog(data){
+  try {
+    const temp = await addDocument("Log", {
+      content: data.content,
+      deviceID: data.deviceID,
+      Time: new Date(),
+    });
+    return temp;
+  } catch (e) {
+    console.error("Error adding document: ", e);
+  }
+}
+
+module.exports = { getDocument, addDocument, deleteDocumentById, editDocumentById, addLog };
 
