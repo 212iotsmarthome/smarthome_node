@@ -276,7 +276,7 @@ const getSchedule = setInterval(async () => {
 
 // Listen with React Native
 app.listen(port, () => {
-    console.log("Server is running on port " + port);
+  console.log("Server is running on port " + port);
 });
 
 // PUT request
