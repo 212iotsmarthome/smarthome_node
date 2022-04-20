@@ -269,7 +269,8 @@ const getSchedule = setInterval(async () => {
     });
   }
   else{
-    console.log("No Schedule !");
+    let a = new Date();
+    console.log(a.getHours() + ":" + a.getMinutes() + ":" + a.getSeconds() + ": No Schedule!");
   }
 }, 1000 * ScheduleInterval);
 
@@ -318,10 +319,12 @@ app.put("/controlDoor", (req, res) => {
   console.log(id, isLocked, isOpen);
 
   Door[boardId][id]["motor"] = isOpen;
-  Door[boardId][id]["lock"] = isLocked;
-
-  res.send("Received control door req");
   writeMQTT(Doortopic, JSON.stringify(Door));
+  setTimeout(()=>{},1000);
+  Door[boardId][id]["lock"] = isLocked;
+  writeMQTT(Doortopic, JSON.stringify(Door));
+
+  res.send("Received control door req: " + isOpen + isLocked);
 });
 
 app.put("/controlAlarm", (req, res) => {
@@ -395,7 +398,7 @@ app.get('/getCurtain', (req, res) => {
 })
 
 // Receive MQTT message 
-client.on("message", (topic, message) => {
+client.on("message", async (topic, message) => {
   if (topic === LEDtopic) {
     LED = JSON.parse(message);
     console.log(LED);
@@ -418,21 +421,23 @@ client.on("message", (topic, message) => {
   }
   if (topic === Sensortopic) {
     Sensor = JSON.parse(message);
-    Envis = getDocument("EnviSensor");
-    let Devices = getDocument("Device");
+    Envis = await getDocument("EnviSensor");
+    let Devices = await getDocument("Device");
     Envis.forEach(async element => {
       for(let i = 0; i < Devices.length; i++){
         if(Devices[i].ID == element.ID){
-          if(Sensor[Devices[i].boardID]["DHT11"][element.DHT_index]["temperature"] < 50 && Sensor[Devices[i].boardID]["gas"][element.Gas_index] == 0){
+          if(Sensor[Devices[i].boardID]["DHT11"][element.DHT_index]["temperature"] < 30 && Sensor[Devices[i].boardID]["gas"][element.Gas_index] == 0){
             Buzzer[Devices[i].boardID][element.Buzzer_index] = 0;
             writeMQTT(Buzztopic, JSON.stringify(Buzzer));
           }
           else{
+            console.log("Hello mom");
             await addLog({
               content: "Envi (#"+ element.ID + ") has detected dangerous statistic, please check your house.",
               deviceID: element.ID
             });
             if(element.setBuzzer){
+              
               Buzzer[Devices[i].boardID][element.Buzzer_index] = 1;
               writeMQTT(Buzztopic, JSON.stringify(Buzzer));
             }
