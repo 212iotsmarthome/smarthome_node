@@ -37,6 +37,7 @@ var   LED = jsonModel.led,
 
 var Schedules, Devices, Envis;
 
+
 // Publish on AdafruitIO via MQTT
 function writeMQTT(topic, str) {
   client.publish(topic, str, { qos: 0, retain: false }, (error) => {
@@ -355,47 +356,47 @@ app.put("/controlCurtain", (req, res) => {
 
 // GET request
 app.get('/getEnviStatus', (req, res) => {
-    const boardID = req.query.boardID;
-    const Dindex = req.query.Dindex;
-    const Lindex = req.query.Lindex;
-    const Gindex = req.query.Gindex;
-    try{
-      console.log(Sensor[boardID]["DHT11"][Dindex], Dindex)
-      res.send({value: {
-        humid: Sensor[boardID]["DHT11"][Dindex]["humid"],
-        temperature: Sensor[boardID]["DHT11"][Dindex]["temperature"],
-        brightness: Sensor[boardID]["LDR"][Lindex],
-        gas: Sensor[boardID]["gas"][Gindex],
-      } });
-    }
-    catch(err){
-      console.log(err);
-    }
-})
+  const boardID = req.query.boardID;
+  const Dindex = req.query.Dindex;
+  const Lindex = req.query.Lindex;
+  const Gindex = req.query.Gindex;
+  try{
+    console.log(Sensor[boardID]["DHT11"][Dindex], Dindex)
+    res.send({value: {
+      humid: Sensor[boardID]["DHT11"][Dindex]["humid"],
+      temperature: Sensor[boardID]["DHT11"][Dindex]["temperature"],
+      brightness: Sensor[boardID]["LDR"][Lindex],
+      gas: Sensor[boardID]["gas"][Gindex],
+    } });
+  }
+  catch(err){
+    console.log(err);
+  }
+});
 
 app.get('/getLED', (req, res) => {
   const boardID = req.query.boardID
   const index = req.query.index
   res.send({ value: LED[boardID][index] })
-})
+});
 
 app.get('/getAC', (req, res) => {
   const boardID = req.query.boardID
   const index = req.query.index
   res.send({ value: AC[boardID][index] })
-})
+});
 
 app.get('/getDoor', (req, res) => {
   const boardID = req.query.boardID
   const index = req.query.index
   res.send({ value: Door[boardID][index] })
-})
+});
 
 app.get('/getCurtain', (req, res) => {
   const boardID = req.query.boardID
   const index = req.query.index
   res.send({ value: Curtain[boardID][index] })
-})
+});
 
 // Receive MQTT message 
 client.on("message", async (topic, message) => {
@@ -426,7 +427,7 @@ client.on("message", async (topic, message) => {
     Envis.forEach(async element => {
       for(let i = 0; i < Devices.length; i++){
         if(Devices[i].ID == element.ID){
-          if(Sensor[Devices[i].boardID]["DHT11"][element.DHT_index]["temperature"] < 30 && Sensor[Devices[i].boardID]["gas"][element.Gas_index] == 0){
+          if(Sensor[Devices[i].boardID]["DHT11"][element.DHT_index]["temperature"] < 40 && Sensor[Devices[i].boardID]["gas"][element.Gas_index] == 0){
             Buzzer[Devices[i].boardID][element.Buzzer_index] = 0;
             writeMQTT(Buzztopic, JSON.stringify(Buzzer));
           }
