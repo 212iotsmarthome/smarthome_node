@@ -192,7 +192,7 @@ async function decodeAction (boardID, index, deviceID, sid, str){
 var client = mqtt.connect("mqtts://io.adafruit.com", {
   port: 8883,
   username: username,
-  password: "aio_cSFh41uOGJgJ3IyiK0f0evTUtDOw",
+  password: "aio_mKDI29yyp6AN78keMDuEsmGWNlEK",
 });
 
 client.on("connect", async () => {
