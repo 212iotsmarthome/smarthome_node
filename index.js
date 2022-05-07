@@ -192,7 +192,7 @@ async function decodeAction (boardID, index, deviceID, sid, str){
 var client = mqtt.connect("mqtts://io.adafruit.com", {
   port: 8883,
   username: username,
-  password: "aio_mKDI29yyp6AN78keMDuEsmGWNlEK",
+  password: process.env.password,
 });
 
 client.on("connect", async () => {
@@ -317,14 +317,29 @@ app.put("/controlDoor", (req, res) => {
   const boardId = req.body.boardId;
   const isLocked = req.body.isLocked ? 1 : 0;
   const isOpen = req.body.isOpen ? 1 : 0;
-  console.log(id, isLocked, isOpen);
+  console.log(isLocked, isOpen);
 
-  Door[boardId][id]["motor"] = isOpen;
-  writeMQTT(Doortopic, JSON.stringify(Door));
-  setTimeout(()=>{},1000);
-  Door[boardId][id]["lock"] = isLocked;
-  writeMQTT(Doortopic, JSON.stringify(Door));
-
+  if(Door[boardId][id]["motor"] == 1 && isLocked == 1){
+    Door[boardId][id]["motor"] = isOpen;
+    Door[boardId][id]["lock"] = isLocked;
+    writeMQTT(Doortopic, JSON.stringify(Door));
+  }
+  else{
+    if(Door[boardId][id]["lock"] == 1 && isOpen == 1){
+      Door[boardId][id]["lock"] = isLocked;
+      // writeMQTT(Doortopic, JSON.stringify(Door));
+      // setTimeout(() => {}, 1000);
+      // console.log("3");
+      Door[boardId][id]["motor"] = isOpen;
+      writeMQTT(Doortopic, JSON.stringify(Door));
+    }
+    else{
+      Door[boardId][id]["lock"] = isLocked;
+      Door[boardId][id]["motor"] = isOpen;
+      writeMQTT(Doortopic, JSON.stringify(Door));
+    }
+  }
+  console.log("hw" + Door[boardId][id]);
   res.send("Received control door req: " + isOpen + isLocked);
 });
 
@@ -427,22 +442,29 @@ client.on("message", async (topic, message) => {
     Envis.forEach(async element => {
       for(let i = 0; i < Devices.length; i++){
         if(Devices[i].ID == element.ID){
-          if(Sensor[Devices[i].boardID]["DHT11"][element.DHT_index]["temperature"] < 40 && Sensor[Devices[i].boardID]["gas"][element.Gas_index] == 0){
-            Buzzer[Devices[i].boardID][element.Buzzer_index] = 0;
-            writeMQTT(Buzztopic, JSON.stringify(Buzzer));
+          if(element.setBuzzer){
+            if(Sensor[Devices[i].boardID]["DHT11"][element.DHT_index]["temperature"] < 32 && Sensor[Devices[i].boardID]["gas"][element.Gas_index] == 0){ // No Emergency
+              if(Buzzer[Devices[i].boardID][element.Buzzer_index] == 1){
+                Buzzer[Devices[i].boardID][element.Buzzer_index] = 0;
+                writeMQTT(Buzztopic, JSON.stringify(Buzzer));
+              }
+            } 
+            else{ // There is An Emergency
+              if(Buzzer[Devices[i].boardID][element.Buzzer_index] == 0){
+                await addLog({
+                  content: "Envi (#"+ element.ID + ") has detected dangerous statistic, please check your house.",
+                  deviceID: element.ID
+                });
+                Buzzer[Devices[i].boardID][element.Buzzer_index] = 1;
+                writeMQTT(Buzztopic, JSON.stringify(Buzzer));
+              }
+            }
           }
           else{
-            console.log("Hello mom");
-            await addLog({
-              content: "Envi (#"+ element.ID + ") has detected dangerous statistic, please check your house.",
-              deviceID: element.ID
-            });
-            if(element.setBuzzer){
-              
-              Buzzer[Devices[i].boardID][element.Buzzer_index] = 1;
+            if(Buzzer[Devices[i].boardID][element.Buzzer_index] == 1){
+              Buzzer[Devices[i].boardID][element.Buzzer_index] = 0;
               writeMQTT(Buzztopic, JSON.stringify(Buzzer));
             }
-            // Add Log
           }
         }
       }
