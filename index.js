@@ -33,7 +33,8 @@ var   LED = jsonModel.led,
       Buzzer = jsonModel.buzzer,
       Curtain = jsonModel.curtain,
       Door = jsonModel.door,
-      Sensor = jsonModel.sensor;
+      Sensor = jsonModel.sensor,
+      Danger = jsonModel.buzzer;
 
 var Schedules, Devices, Envis;
 
@@ -350,6 +351,7 @@ app.put("/controlAlarm", (req, res) => {
   console.log(id, boardId, value);
 
   Buzzer[boardId][id] = value;
+  Danger[boardId][id] = value;
 
   res.send("Received control alarm req: " + id + " " + isOn);
   writeMQTT(Buzztopic, JSON.stringify(Buzzer));
@@ -442,7 +444,7 @@ client.on("message", async (topic, message) => {
     Envis.forEach(async element => {
       for(let i = 0; i < Devices.length; i++){
         if(Devices[i].ID == element.ID){
-          if(element.setBuzzer){
+          if(element.setBuzzer){ // There is Buzzer
             if(Sensor[Devices[i].boardID]["DHT11"][element.DHT_index]["temperature"] < 32 && Sensor[Devices[i].boardID]["gas"][element.Gas_index] == 0){ // No Emergency
               if(Buzzer[Devices[i].boardID][element.Buzzer_index] == 1){
                 Buzzer[Devices[i].boardID][element.Buzzer_index] = 0;
@@ -460,10 +462,26 @@ client.on("message", async (topic, message) => {
               }
             }
           }
-          else{
-            if(Buzzer[Devices[i].boardID][element.Buzzer_index] == 1){
+          else{ // There is not Buzzer
+            if (Buzzer[Devices[i].boardID][element.Buzzer_index] == 1){
               Buzzer[Devices[i].boardID][element.Buzzer_index] = 0;
               writeMQTT(Buzztopic, JSON.stringify(Buzzer));
+            }
+            if(Sensor[Devices[i].boardID]["DHT11"][element.DHT_index]["temperature"] < 32 && Sensor[Devices[i].boardID]["gas"][element.Gas_index] == 0){ // No Emergency
+              // if(Buzzer[Devices[i].boardID][element.Buzzer_index] == 1){
+              //   Buzzer[Devices[i].boardID][element.Buzzer_index] = 0;
+              //   writeMQTT(Buzztopic, JSON.stringify(Buzzer));
+              // }
+              Danger[Devices[i].boardID][element.Buzzer_index] = 0;
+            } 
+            else{ // There is An Emergency
+              if(Danger[Devices[i].boardID][element.Buzzer_index] == 0){
+                await addLog({
+                  content: "Envi (#"+ element.ID + ") has detected dangerous statistic, please check your house.",
+                  deviceID: element.ID
+                });
+                Danger[Devices[i].boardID][element.Buzzer_index] = 1;
+              }
             }
           }
         }
